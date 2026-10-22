@@ -85,6 +85,24 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual([tarea["id"] for tarea in tareas], [1, 3])
 
+    def test_agregar_tarea_despues_de_eliminar_mantiene_ids_unicos_y_completa_correcta(self):
+        tareas = []
+        agregar_tarea(tareas, "A", "Laboratorio")
+        agregar_tarea(tareas, "B", "Laboratorio")
+        agregar_tarea(tareas, "C", "Laboratorio")
+
+        eliminar_tarea(tareas, 1)
+        nueva_tarea = agregar_tarea(tareas, "D", "Laboratorio")
+
+        ids = [tarea["id"] for tarea in tareas]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(nueva_tarea["id"], 4)
+
+        completar_tarea(tareas, nueva_tarea["id"])
+        self.assertTrue(nueva_tarea["completada"])
+        tarea_c = next(tarea for tarea in tareas if tarea["titulo"] == "C")
+        self.assertFalse(tarea_c["completada"])
+
 
 if __name__ == "__main__":
     unittest.main()
