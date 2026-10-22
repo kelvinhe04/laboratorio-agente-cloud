@@ -1,5 +1,5 @@
 import unittest
-from tasks import agregar_tarea, completar_tarea, pendientes
+from tasks import agregar_tarea, completar_tarea, eliminar_tarea, pendientes
 
 
 class TestTasks(unittest.TestCase):
@@ -52,6 +52,56 @@ class TestTasks(unittest.TestCase):
         resultado_con_espacios = pendientes(tareas, "   ")
 
         self.assertEqual(resultado_con_espacios, resultado_sin_filtro)
+
+    def test_eliminar_tarea_existente(self):
+        tareas = []
+        agregar_tarea(tareas, "Practicar unittest", "Laboratorio")
+        tarea_eliminada = agregar_tarea(tareas, "Leer documentación", "Estudio")
+
+        resultado = eliminar_tarea(tareas, 2)
+
+        self.assertEqual(resultado, tarea_eliminada)
+        self.assertEqual(len(tareas), 1)
+        self.assertEqual(tareas[0]["id"], 1)
+        self.assertEqual(pendientes(tareas), [tareas[0]])
+
+    def test_eliminar_tarea_id_inexistente(self):
+        tareas = []
+        agregar_tarea(tareas, "Practicar unittest", "Laboratorio")
+        tareas_originales = tareas.copy()
+
+        with self.assertRaisesRegex(ValueError, "Tarea no encontrada"):
+            eliminar_tarea(tareas, 99)
+
+        self.assertEqual(tareas, tareas_originales)
+
+    def test_eliminar_tarea_conserva_ids_restantes(self):
+        tareas = []
+        agregar_tarea(tareas, "Tarea 1", "Laboratorio")
+        agregar_tarea(tareas, "Tarea 2", "Laboratorio")
+        agregar_tarea(tareas, "Tarea 3", "Laboratorio")
+
+        eliminar_tarea(tareas, 2)
+
+        self.assertEqual([tarea["id"] for tarea in tareas], [1, 3])
+
+    def test_agregar_tarea_despues_de_eliminar_mantiene_ids_unicos_y_completa_correcta(self):
+        tareas = []
+        agregar_tarea(tareas, "A", "Laboratorio")
+        agregar_tarea(tareas, "B", "Laboratorio")
+        agregar_tarea(tareas, "C", "Laboratorio")
+
+        eliminar_tarea(tareas, 1)
+        nueva_tarea = agregar_tarea(tareas, "D", "Laboratorio")
+
+        ids = [tarea["id"] for tarea in tareas]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(nueva_tarea["id"], 4)
+
+        completar_tarea(tareas, nueva_tarea["id"])
+        self.assertTrue(nueva_tarea["completada"])
+        tarea_c = next(tarea for tarea in tareas if tarea["titulo"] == "C")
+        self.assertFalse(tarea_c["completada"])
 
 
 if __name__ == "__main__":
